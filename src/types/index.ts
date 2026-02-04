@@ -111,6 +111,17 @@ export interface RejectExpenseRequest {
   reason: string;
 }
 
+export interface AuditLog {
+  id: string;
+  expenseRequestId: string;
+  userId: string;
+  action: string;
+  previousStatus?: ExpenseStatus;
+  newStatus?: ExpenseStatus;
+  details?: string;
+  timestamp: string;
+}
+
 export interface ApiError {
   error?: string;
   message?: string;

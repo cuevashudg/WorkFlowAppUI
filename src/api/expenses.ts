@@ -4,6 +4,7 @@ import type {
   CreateExpenseRequest,
   UpdateExpenseRequest,
   RejectExpenseRequest,
+  AuditLog,
 } from '../types';
 
 export const expenseApi = {
@@ -45,5 +46,10 @@ export const expenseApi = {
 
   addAttachment: async (id: string, attachmentUrl: string): Promise<void> => {
     await apiClient.post(`/expenses/${id}/attachments`, { attachmentUrl });
+  },
+
+  getAuditHistory: async (id: string): Promise<AuditLog[]> => {
+    const response = await apiClient.get<AuditLog[]>(`/expenses/${id}/audit-history`);
+    return response.data;
   },
 };

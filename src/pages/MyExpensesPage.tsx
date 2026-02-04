@@ -5,7 +5,7 @@ import { ExpenseForm } from '../components/ExpenseForm';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { expenseApi } from '../api/expenses';
 import { ExpenseStatus, ExpenseStatusNames } from '../types';
-import type { ExpenseRequest, CreateExpenseRequest, UpdateExpenseRequest } from '../types';
+import type { ExpenseRequest, CreateExpenseRequest, UpdateExpenseRequest, AuditLog } from '../types';
 import toast from 'react-hot-toast';
 import { handleApiError } from '../api/client';
 import { format } from 'date-fns';
@@ -18,6 +18,8 @@ export const MyExpensesPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedExpense, setSelectedExpense] = useState<ExpenseRequest | null>(null);
   const [filter, setFilter] = useState<ExpenseStatus | 'all'>('all');
+  const [auditHistory, setAuditHistory] = useState<AuditLog[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
 
   useEffect(() => {
     loadExpenses();
@@ -74,6 +76,20 @@ export const MyExpensesPage: React.FC = () => {
   const handleView = (expense: ExpenseRequest) => {
     setSelectedExpense(expense);
     setViewMode('view');
+    loadAuditHistory(expense.id);
+  };
+
+  const loadAuditHistory = async (expenseId: string) => {
+    try {
+      setLoadingAudit(true);
+      const history = await expenseApi.getAuditHistory(expenseId);
+      setAuditHistory(history);
+    } catch (error) {
+      console.error('Failed to load audit history:', error);
+      setAuditHistory([]);
+    } finally {
+      setLoadingAudit(false);
+    }
   };
 
   const handleEdit = (expense: ExpenseRequest) => {
@@ -203,6 +219,39 @@ export const MyExpensesPage: React.FC = () => {
                   </ul>
                 </div>
               )}
+
+              {/* Audit History Section */}
+              <div className="border-t pt-6 mt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Audit History</h3>
+                {loadingAudit ? (
+                  <LoadingSpinner message="Loading audit history..." />
+                ) : auditHistory.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No audit history available</p>
+                ) : (
+                  <div className="space-y-3">
+                    {auditHistory.map((log) => (
+                      <div key={log.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <span className="font-medium text-gray-900">{log.action}</span>
+                            {log.previousStatus !== undefined && log.newStatus !== undefined && (
+                              <span className="text-sm text-gray-600 ml-2">
+                                ({ExpenseStatusNames[log.previousStatus]} → {ExpenseStatusNames[log.newStatus]})
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs text-gray-500">
+                            {format(new Date(log.timestamp), 'MMM d, yyyy HH:mm:ss')}
+                          </span>
+                        </div>
+                        {log.details && (
+                          <p className="text-sm text-gray-700">{log.details}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
