@@ -2,6 +2,8 @@
 
 UI for WorkFlow expense approval application developed using React + TypeScript + Vite.
 
+This is the frontend application for the [ExpenseWorkflow Backend](https://github.com/cuevashudg/ExpenseWorkflow).
+
 ## Features
 
 - **Authentication**: JWT-based authentication with login and registration
@@ -27,6 +29,7 @@ UI for WorkFlow expense approval application developed using React + TypeScript 
 
 - Node.js 18+ installed
 - Backend API running on port 5064
+  - Clone and run the backend from: https://github.com/cuevashudg/ExpenseWorkflow
 
 ### Installation
 
