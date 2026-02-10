@@ -77,7 +77,7 @@ export const expenseApi = {
   uploadReceipt: async (id: string, file: File): Promise<{ fileUrl: string }> => {
     const formData = new FormData();
     formData.append('receipt', file);
-    const response = await apiClient.post<{ fileUrl: string }>(`/expenses/${id}/upload-receipt`, formData, {
+    const response = await apiClient.post<{ fileUrl: string }>(`/expenses/${id}/receipt`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;

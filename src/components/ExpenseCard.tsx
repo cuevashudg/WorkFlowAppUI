@@ -82,9 +82,18 @@ export const ExpenseCard: React.FC<ExpenseCardProps> = ({
           </div>
         )}
         {expense.attachmentUrls.length > 0 && (
-          <div className="flex justify-between text-sm">
+          <div className="flex flex-col text-sm gap-1">
             <span className="text-gray-500">Attachments:</span>
-            <span className="text-green-600 font-medium">✓ {expense.attachmentUrls.length} receipt(s)</span>
+            {expense.attachmentUrls.map((url, idx) => (
+              <div key={idx} className="flex gap-2 items-center">
+                <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                  View
+                </a>
+                <a href={url} download className="text-green-600 underline">
+                  Download
+                </a>
+              </div>
+            ))}
           </div>
         )}
       </div>
