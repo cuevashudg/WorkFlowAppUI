@@ -80,6 +80,9 @@ export interface LoginResponse {
 export interface ExpenseRequest {
   id: string;
   creatorId: string;
+  creatorName?: string;
+  categoryId?: string;
+  category?: ExpenseCategory;
   title: string;
   description: string;
   amount: number;
@@ -94,17 +97,59 @@ export interface ExpenseRequest {
   attachmentUrls: string[];
 }
 
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface ExpenseQuery {
+  search?: string;
+  status?: ExpenseStatus;
+  fromDate?: string;
+  toDate?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AuditLog {
+  id: string;
+  expenseRequestId: string;
+  userId: string;
+  action: string;
+  previousStatus?: ExpenseStatus;
+  newStatus?: ExpenseStatus;
+  details?: string;
+  timestamp: string;
+}
+
+export interface ExpenseComment {
+  id: string;
+  expenseRequestId: string;
+  userId: string;
+  userName: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface CreateExpenseRequest {
   title: string;
   description: string;
   amount: number;
   expenseDate: string;
+  categoryId?: string;
 }
 
 export interface UpdateExpenseRequest {
   title: string;
   description: string;
   amount: number;
+  categoryId?: string;
 }
 
 export interface RejectExpenseRequest {
@@ -115,4 +160,109 @@ export interface ApiError {
   error?: string;
   message?: string;
   errors?: string[];
+}
+
+export interface ExpenseCategory {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface ExpenseAnalytics {
+  totalExpenses: number;
+  approvedAmount: number;
+  pendingAmount: number;
+  totalCount: number;
+  approvedCount: number;
+  pendingCount: number;
+  rejectedCount: number;
+  averageExpense: number;
+  categoryBreakdown: CategorySpending[];
+  monthlyTrends: MonthlyTrend[];
+}
+
+export interface CategorySpending {
+  categoryId: string | null;
+  categoryName: string;
+  categoryIcon: string;
+  categoryColor: string;
+  totalAmount: number;
+  count: number;
+}
+
+export interface MonthlyTrend {
+  year: number;
+  month: number;
+  monthName: string;
+  totalAmount: number;
+  count: number;
+}
+
+export interface StatusDistribution {
+  status: string;
+  count: number;
+  totalAmount: number;
+  percentage: number;
+}
+
+export interface ApprovalRateData {
+  period: string;
+  totalSubmitted: number;
+  approved: number;
+  rejected: number;
+  approvalRate: number;
+  rejectionRate: number;
+}
+
+export interface Budget {
+  id: string;
+  name: string;
+  description?: string;
+  amount: number;
+  startDate: string;
+  endDate: string;
+  userId?: string;
+  categoryId?: string;
+  category?: ExpenseCategory;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface BudgetStatus {
+  budgetId: string;
+  budgetName: string;
+  description?: string;
+  budgetAmount: number;
+  spentAmount: number;
+  remainingAmount: number;
+  percentageUsed: number;
+  categoryName?: string;
+  categoryIcon?: string;
+  startDate: string;
+  endDate: string;
+  daysRemaining: number;
+  isOverBudget: boolean;
+  isActive: boolean;
+}
+
+export interface CreateBudgetRequest {
+  name: string;
+  description?: string;
+  amount: number;
+  startDate: string;
+  endDate: string;
+  categoryId?: string;
+}
+
+export interface UpdateBudgetRequest {
+  name: string;
+  description?: string;
+  amount: number;
+  startDate: string;
+  endDate: string;
 }
