@@ -6,13 +6,15 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Comments } from '../components/Comments';
 import { expenseApi } from '../api/expenses';
 import { ExpenseStatus, ExpenseStatusNames } from '../types';
-import type { ExpenseRequest, CreateExpenseRequest, UpdateExpenseRequest, ExpenseQuery, AuditLog } from '../types';
+import type { ExpenseRequest, CreateExpenseRequest, UpdateExpenseRequest, ExpenseQuery, AuditLog, ExpenseCategory } from '../types';
+import { analyticsApi } from '../api/analytics';
 import toast from 'react-hot-toast';
 import { handleApiError } from '../api/client';
 import { format } from 'date-fns';
 import { exportExpensesToCSV, generateCSVFilename } from '../utils/csvExport';
 
 type ViewMode = 'list' | 'create' | 'edit' | 'view' | 'audit';
+
 
 export const MyExpensesPage: React.FC = () => {
   const [expenses, setExpenses] = useState<ExpenseRequest[]>([]);
@@ -21,15 +23,17 @@ export const MyExpensesPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedExpense, setSelectedExpense] = useState<ExpenseRequest | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  
+
   // Query state
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ExpenseStatus | undefined>(undefined);
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(12);
   const [sortBy, setSortBy] = useState<string>('createdAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
-  
+
   // Advanced filters
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -45,8 +49,21 @@ export const MyExpensesPage: React.FC = () => {
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
 
   useEffect(() => {
+    loadCategories();
+  }, []);
+
+  useEffect(() => {
     loadExpenses();
-  }, [page, statusFilter, sortBy, sortDir, fromDate, toDate, minAmount, maxAmount]);
+  }, [page, statusFilter, categoryFilter, sortBy, sortDir, fromDate, toDate, minAmount, maxAmount]);
+
+  const loadCategories = async () => {
+    try {
+      const data = await analyticsApi.getCategories();
+      setCategories(data);
+    } catch (error) {
+      // Optionally handle error
+    }
+  };
 
   const loadExpenses = async () => {
     try {
@@ -54,6 +71,7 @@ export const MyExpensesPage: React.FC = () => {
       const query: ExpenseQuery = {
         search: search || undefined,
         status: statusFilter,
+        categoryId: categoryFilter || undefined,
         fromDate: fromDate || undefined,
         toDate: toDate || undefined,
         minAmount: minAmount ? parseFloat(minAmount) : undefined,
@@ -154,7 +172,7 @@ export const MyExpensesPage: React.FC = () => {
   const handleUpload = async (expenseId: string, file: File) => {
     try {
       setUploadingFor(expenseId);
-      const result = await expenseApi.uploadReceipt(expenseId, file);
+      await expenseApi.uploadReceipt(expenseId, file);
       toast.success('Receipt uploaded');
       await loadExpenses();
     } catch (error) {
@@ -405,7 +423,7 @@ export const MyExpensesPage: React.FC = () => {
 
         {/* Search and Filters */}
         <div className="card mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
               <div className="flex gap-2">
@@ -427,7 +445,7 @@ export const MyExpensesPage: React.FC = () => {
               <select
                 value={statusFilter ?? ''}
                 onChange={(e) => {
-                  setStatusFilter(e.target.value === '' ? undefined : Number(e.target.value));
+                  setStatusFilter(e.target.value === '' ? undefined : Number(e.target.value) as ExpenseStatus);
                   setPage(1);
                 }}
                 className="input"
@@ -437,6 +455,24 @@ export const MyExpensesPage: React.FC = () => {
                 <option value={ExpenseStatus.Submitted}>Submitted</option>
                 <option value={ExpenseStatus.Approved}>Approved</option>
                 <option value={ExpenseStatus.Rejected}>Rejected</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <select
+                value={categoryFilter}
+                onChange={(e) => {
+                  setCategoryFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="input"
+              >
+                <option value="">All Categories</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.icon} {cat.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div>

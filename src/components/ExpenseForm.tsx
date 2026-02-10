@@ -31,6 +31,12 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
     loadCategories();
   }, []);
 
+  // If categories are empty and the dropdown is opened, reload (handles edge case for fast navigation)
+  const handleCategoryDropdownFocus = () => {
+    if (categories.length === 0) {
+      loadCategories();
+    }
+  };
   const loadCategories = async () => {
     try {
       const data = await analyticsApi.getCategories();
@@ -134,14 +140,19 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
           className="input"
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
+          onFocus={handleCategoryDropdownFocus}
           disabled={isLoading}
         >
           <option value="">Select a category (optional)</option>
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.icon} {category.name}
-            </option>
-          ))}
+          {categories.length === 0 ? (
+            <option disabled>Loading categories...</option>
+          ) : (
+            categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.icon} {category.name}
+              </option>
+            ))
+          )}
         </select>
         {categoryId && categories.find(c => c.id === categoryId) && (
           <p className="mt-1 text-xs text-gray-500">

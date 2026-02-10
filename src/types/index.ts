@@ -107,6 +107,7 @@ export interface PagedResult<T> {
 export interface ExpenseQuery {
   search?: string;
   status?: ExpenseStatus;
+  categoryId?: string;
   fromDate?: string;
   toDate?: string;
   minAmount?: number;
