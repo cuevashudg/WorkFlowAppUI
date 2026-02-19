@@ -32,6 +32,9 @@ export const ApprovalsPage: React.FC = () => {
   const [maxAmount, setMaxAmount] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   useEffect(() => {
     loadPendingExpenses();
   }, [page, sortBy, sortDir, fromDate, toDate, minAmount, maxAmount]);
@@ -104,6 +107,66 @@ export const ApprovalsPage: React.FC = () => {
       toast.error(handleApiError(error));
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedIds.length === 0) {
+      toast.error('Select at least one expense to approve.');
+      return;
+    }
+    if (!confirm(`Approve ${selectedIds.length} selected expenses?`)) return;
+    try {
+      setIsProcessing(true);
+      const result = await expenseApi.bulkApprove(selectedIds);
+      toast.success(`Approved ${result.approved.length} expenses.`);
+      setSelectedIds([]);
+      await loadPendingExpenses();
+    } catch (error) {
+      toast.error(handleApiError(error));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBulkReject = async () => {
+    if (selectedIds.length === 0) {
+      toast.error('Select at least one expense to reject.');
+      return;
+    }
+    const reason = prompt(`Enter a rejection reason for ${selectedIds.length} expenses:`);
+    if (!reason || !reason.trim()) {
+      toast.error('Rejection reason is required.');
+      return;
+    }
+    if (!confirm(`Reject ${selectedIds.length} selected expenses?`)) return;
+    try {
+      setIsProcessing(true);
+      // Sequentially reject each expense (API does not support bulk reject yet)
+      for (const id of selectedIds) {
+        await expenseApi.rejectExpense(id, { reason });
+      }
+      toast.success(`Rejected ${selectedIds.length} expenses.`);
+      setSelectedIds([]);
+      await loadPendingExpenses();
+    } catch (error) {
+      toast.error(handleApiError(error));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === expenses.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(expenses.map((e) => e.id));
     }
   };
 
@@ -275,6 +338,30 @@ export const ApprovalsPage: React.FC = () => {
         </div>
       </div>
 
+      <div className="mb-4 flex gap-2 items-center">
+        <input
+          type="checkbox"
+          checked={selectedIds.length === expenses.length && expenses.length > 0}
+          onChange={toggleSelectAll}
+          className="mr-2"
+        />
+        <span className="text-sm">Select All</span>
+        <button
+          onClick={handleBulkApprove}
+          className="btn-success ml-4"
+          disabled={selectedIds.length === 0 || isProcessing}
+        >
+          ✓ Bulk Approve
+        </button>
+        <button
+          onClick={handleBulkReject}
+          className="btn-danger ml-2"
+          disabled={selectedIds.length === 0 || isProcessing}
+        >
+          ✗ Bulk Reject
+        </button>
+      </div>
+
       {expenses.length === 0 ? (
         <div className="card text-center py-12">
           <p className="text-gray-500 text-lg">No pending expenses to review</p>
@@ -287,6 +374,12 @@ export const ApprovalsPage: React.FC = () => {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(expense.id)}
+                        onChange={() => toggleSelect(expense.id)}
+                        className="mr-2"
+                      />
                       <h3 className="text-xl font-semibold text-gray-900">{expense.title}</h3>
                       {expense.creatorName && (
                         <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">

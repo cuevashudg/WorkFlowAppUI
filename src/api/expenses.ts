@@ -101,4 +101,17 @@ export const expenseApi = {
   addAttachment: async (id: string, attachmentUrl: string): Promise<void> => {
     await apiClient.post(`/expenses/${id}/attachments`, { attachmentUrl });
   },
+
+  /**
+   * Bulk approve multiple expenses by IDs
+   * @param expenseIds Array of expense GUIDs
+   * @returns List of approved expense IDs
+   */
+  bulkApprove: async (expenseIds: string[]): Promise<{ approved: string[] }> => {
+    const response = await apiClient.post<{ approved: string[] }>(
+      '/expenses/bulk-approve',
+      expenseIds
+    );
+    return response.data;
+  },
 };
