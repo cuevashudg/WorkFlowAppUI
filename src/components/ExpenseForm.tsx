@@ -4,12 +4,12 @@ import { analyticsApi } from '../api/analytics';
 import toast from 'react-hot-toast';
 import { handleApiError } from '../api/client';
 
-interface ExpenseFormProps {
-  initialData?: ExpenseRequest;
-  onSubmit: (data: CreateExpenseRequest) => Promise<void> | ((data: UpdateExpenseRequest) => Promise<void>);
+type ExpenseFormProps = {
   onCancel: () => void;
-  isEdit?: boolean;
-}
+} & (
+  | { isEdit?: false; initialData?: undefined; onSubmit: (data: CreateExpenseRequest) => Promise<void> }
+  | { isEdit: true; initialData: ExpenseRequest; onSubmit: (data: UpdateExpenseRequest) => Promise<void> }
+);
 
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({
   initialData,
@@ -58,7 +58,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
           amount: parseFloat(amount),
           categoryId: categoryId || undefined
         };
-        await (onSubmit as (data: UpdateExpenseRequest) => Promise<void>)(data);
+        await onSubmit(data);
       } else {
         const data: CreateExpenseRequest = { 
           title, 
@@ -67,7 +67,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
           expenseDate: new Date(expenseDate).toISOString(),
           categoryId: categoryId || undefined
         };
-        await (onSubmit as (data: CreateExpenseRequest) => Promise<void>)(data);
+        await onSubmit(data);
       }
     } finally {
       setIsLoading(false);

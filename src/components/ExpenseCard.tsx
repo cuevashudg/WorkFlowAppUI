@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import type { ExpenseRequest } from '../types';
 import { ExpenseStatus, ExpenseStatusNames } from '../types';
 import { format } from 'date-fns';
+import { getAttachmentUrl } from '../utils/attachments';
 
 interface ExpenseCardProps {
   expense: ExpenseRequest;
@@ -86,11 +87,8 @@ export const ExpenseCard: React.FC<ExpenseCardProps> = ({
             <span className="text-gray-500">Attachments:</span>
             {expense.attachmentUrls.map((url, idx) => (
               <div key={idx} className="flex gap-2 items-center">
-                <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                  View
-                </a>
-                <a href={url} download className="text-green-600 underline">
-                  Download
+                <a href={getAttachmentUrl(expense.id, url)} download className="text-green-600 underline">
+                  📎 Download Receipt {idx + 1}
                 </a>
               </div>
             ))}

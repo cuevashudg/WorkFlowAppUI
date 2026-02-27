@@ -4,6 +4,7 @@ import { ExpenseCard } from '../components/ExpenseCard';
 import { ExpenseForm } from '../components/ExpenseForm';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Comments } from '../components/Comments';
+import { Pagination } from '../components/Pagination';
 import { expenseApi } from '../api/expenses';
 import { ExpenseStatus, ExpenseStatusNames } from '../types';
 import type { ExpenseRequest, CreateExpenseRequest, UpdateExpenseRequest, ExpenseQuery, AuditLog, ExpenseCategory } from '../types';
@@ -12,6 +13,7 @@ import toast from 'react-hot-toast';
 import { handleApiError } from '../api/client';
 import { format } from 'date-fns';
 import { exportExpensesToCSV, generateCSVFilename } from '../utils/csvExport';
+import { getAttachmentUrl } from '../utils/attachments';
 
 type ViewMode = 'list' | 'create' | 'edit' | 'view' | 'audit';
 
@@ -300,12 +302,11 @@ export const MyExpensesPage: React.FC = () => {
                     {selectedExpense.attachmentUrls.map((url, index) => (
                       <a
                         key={index}
-                        href={`/api${url}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center text-primary-600 hover:text-primary-700"
+                        href={getAttachmentUrl(selectedExpense.id, url)}
+                        download
+                        className="flex items-center text-green-600 hover:text-green-700"
                       >
-                        📎 Receipt {index + 1}
+                        📎 Download Attachment {index + 1}
                       </a>
                     ))}
                   </div>
@@ -431,7 +432,7 @@ export const MyExpensesPage: React.FC = () => {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   placeholder="Search title or description..."
                   className="input flex-1"
                 />
@@ -649,44 +650,26 @@ export const MyExpensesPage: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <ExpenseCard
-                    expense={expense}
-                    onView={handleView}
-                    onEdit={expense.status === ExpenseStatus.Draft ? handleEdit : undefined}
-                    onSubmit={expense.status === ExpenseStatus.Draft ? handleSubmit : undefined}
-                    onDelete={expense.status === ExpenseStatus.Draft ? handleDelete : undefined}
-                    onInlineEdit={expense.status === ExpenseStatus.Draft ? handleInlineEditStart : undefined}
-                    onUpload={expense.status === ExpenseStatus.Draft ? handleUpload : undefined}
-                    onViewAudit={handleViewAudit}
-                    isUploading={uploadingFor === expense.id}
-                  />
+                  <>
+                    <ExpenseCard
+                      expense={expense}
+                      onView={handleView}
+                      onEdit={expense.status === ExpenseStatus.Draft ? handleEdit : undefined}
+                      onSubmit={expense.status === ExpenseStatus.Draft ? handleSubmit : undefined}
+                      onDelete={expense.status === ExpenseStatus.Draft ? handleDelete : undefined}
+                      onInlineEdit={expense.status === ExpenseStatus.Draft ? handleInlineEditStart : undefined}
+                      onUpload={expense.status === ExpenseStatus.Draft ? handleUpload : undefined}
+                      onViewAudit={handleViewAudit}
+                      isUploading={uploadingFor === expense.id}
+                    />
+                    {/* Attachments are already rendered inside ExpenseCard */}
+                  </>
                 )}
               </div>
             ))}
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-8">
-              <button
-                onClick={() => setPage(Math.max(1, page - 1))}
-                disabled={page === 1}
-                className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                ← Previous
-              </button>
-              <span className="text-gray-700">
-                Page {page} of {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(Math.min(totalPages, page + 1))}
-                disabled={page === totalPages}
-                className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next →
-              </button>
-            </div>
-          )}
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </>
       )}
     </Layout>
