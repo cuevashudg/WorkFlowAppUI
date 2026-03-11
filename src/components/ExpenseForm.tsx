@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import type { ExpenseRequest, CreateExpenseRequest, UpdateExpenseRequest } from '../types';
+import React, { useState, useEffect } from 'react';
+import type { ExpenseRequest, CreateExpenseRequest, UpdateExpenseRequest, ExpenseCategory } from '../types';
+import { analyticsApi } from '../api/analytics';
+import toast from 'react-hot-toast';
+import { handleApiError } from '../api/client';
 
-interface ExpenseFormProps {
-  initialData?: ExpenseRequest;
-  onSubmit: (data: CreateExpenseRequest) => Promise<void> | ((data: UpdateExpenseRequest) => Promise<void>);
+type ExpenseFormProps = {
   onCancel: () => void;
-  isEdit?: boolean;
-}
+} & (
+  | { isEdit?: false; initialData?: undefined; onSubmit: (data: CreateExpenseRequest) => Promise<void> }
+  | { isEdit: true; initialData: ExpenseRequest; onSubmit: (data: UpdateExpenseRequest) => Promise<void> }
+);
 
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({
   initialData,
@@ -20,7 +23,28 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const [expenseDate, setExpenseDate] = useState(
     initialData?.expenseDate.split('T')[0] || new Date().toISOString().split('T')[0]
   );
+  const [categoryId, setCategoryId] = useState(initialData?.categoryId || '');
+  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  // If categories are empty and the dropdown is opened, reload (handles edge case for fast navigation)
+  const handleCategoryDropdownFocus = () => {
+    if (categories.length === 0) {
+      loadCategories();
+    }
+  };
+  const loadCategories = async () => {
+    try {
+      const data = await analyticsApi.getCategories();
+      setCategories(data);
+    } catch (error) {
+      toast.error(handleApiError(error));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,16 +52,22 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
     try {
       if (isEdit) {
-        const data: UpdateExpenseRequest = { title, description, amount: parseFloat(amount) };
-        await (onSubmit as (data: UpdateExpenseRequest) => Promise<void>)(data);
+        const data: UpdateExpenseRequest = { 
+          title, 
+          description, 
+          amount: parseFloat(amount),
+          categoryId: categoryId || undefined
+        };
+        await onSubmit(data);
       } else {
         const data: CreateExpenseRequest = { 
           title, 
           description, 
           amount: parseFloat(amount), 
-          expenseDate: new Date(expenseDate).toISOString() 
+          expenseDate: new Date(expenseDate).toISOString(),
+          categoryId: categoryId || undefined
         };
-        await (onSubmit as (data: CreateExpenseRequest) => Promise<void>)(data);
+        await onSubmit(data);
       }
     } finally {
       setIsLoading(false);
@@ -97,6 +127,36 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({
         {parseFloat(amount) > 100 && (
           <p className="mt-1 text-xs text-amber-600">
             ⚠️ Expenses over $100 require a receipt attachment before submission
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+          Category
+        </label>
+        <select
+          id="category"
+          className="input"
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          onFocus={handleCategoryDropdownFocus}
+          disabled={isLoading}
+        >
+          <option value="">Select a category (optional)</option>
+          {categories.length === 0 ? (
+            <option disabled>Loading categories...</option>
+          ) : (
+            categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.icon} {category.name}
+              </option>
+            ))
+          )}
+        </select>
+        {categoryId && categories.find(c => c.id === categoryId) && (
+          <p className="mt-1 text-xs text-gray-500">
+            {categories.find(c => c.id === categoryId)?.description}
           </p>
         )}
       </div>
